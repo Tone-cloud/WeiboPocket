@@ -25,7 +25,8 @@ QPixmap WeiboImageProvider::requestPixmap(const QString &id, QSize *size, const 
   }
 
   // 同步下载图片
-  QNetworkRequest request(QUrl(url));
+  QUrl imgUrl(url);
+  QNetworkRequest request(imgUrl);
   request.setRawHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
   request.setRawHeader("Referer", "https://weibo.com/");
 
@@ -53,7 +54,8 @@ QPixmap WeiboImageProvider::requestPixmap(const QString &id, QSize *size, const 
 void WeiboImageProvider::preload(const QString &url) {
   if (m_cache.contains(url)) return;
 
-  QNetworkRequest request(QUrl(url));
+  QUrl preloadUrl(url);
+  QNetworkRequest request(preloadUrl);
   request.setRawHeader("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
   QNetworkReply *reply = m_nam->get(request);
   connect(reply, &QNetworkReply::finished, this, [this, url, reply]() {

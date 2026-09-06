@@ -1,5 +1,6 @@
 #include "WeiboNetwork.h"
 
+#include <QPointer>
 #include <QUrl>
 #include <QUrlQuery>
 #include <QJsonDocument>
@@ -36,7 +37,8 @@ QString WeiboNetwork::buildUrl(const QString &path, const QMap<QString, QString>
 }
 
 QNetworkReply *WeiboNetwork::doRequest(const QString &url, const QByteArray &body) {
-  QNetworkRequest request(QUrl(url));
+  QUrl reqUrl(url);
+  QNetworkRequest request(reqUrl);
   request.setHeader(QNetworkRequest::ContentTypeHeader, "application/x-www-form-urlencoded");
   request.setRawHeader("Accept", "application/json");
 
@@ -135,7 +137,8 @@ void WeiboNetwork::post(const QString &path,
 void WeiboNetwork::getRaw(const QString &url,
                            std::function<void(const QByteArray &)> onSuccess,
                            std::function<void(int, const QString &)> onError) {
-  QNetworkRequest request(QUrl(url));
+  QUrl rawUrl(url);
+  QNetworkRequest request(rawUrl);
   QNetworkReply *reply = m_nam->get(request);
   m_activeReplies.append(reply);
 
