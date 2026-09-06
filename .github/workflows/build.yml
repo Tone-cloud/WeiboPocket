@@ -5,186 +5,83 @@ on:
     branches: [ main ]
     paths:
       - 'src/**'
-      - 'xmake.lua'
       - '.github/workflows/build.yml'
   workflow_dispatch:
-
-env:
-  QT_VERSION: "5.15.2"
-  TARGET_ARCH: "arm64-v8a"
-  QT_DIR: "/tmp/qt-5.15.2-aarch64"
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git wget unzip zip python3 g++ qtbase5-dev-tools
+          sudo apt-get install -y build-essential git-lfs pkg-config
 
-      - name: Install xmake
-        run: |
-          curl -fsSL https://xmake.io/shget.text | bash
-          source ~/.xmake/profile
-          xmake --version
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Install zig cross toolchain
-        run: |
-          wget -q https://ziglang.org/download/0.13.0/zig-linux-x86_64-0.13.0.tar.xz
-          tar -xf zig-linux-x86_64-0.13.0.tar.xz
-          sudo mv zig-linux-x86_64-0.13.0 /opt/zig
-          export PATH="/opt/zig:$PATH"
-          echo "/opt/zig" >> $GITHUB_PATH
-          zig version
+      - name: Clone Qt 5.15.2 for aarch64
+        run: git clone --depth 1 https://github.com/Lyrecoul/qt-5.15.2-for-aarch64-dictpen-linux.git
 
-      - name: Download and extract Qt 5.15.2 for aarch64
-        run: |
-          wget -q https://github.com/Redbeanw44602/aarch64-linux-qt-5.15.2/releases/download/5.15.2/aarch64-linux-qt-5.15.2.tar.gz
-          mkdir -p $QT_DIR
-          tar -xzf aarch64-linux-qt-5.15.2.tar.gz -C $QT_DIR --strip-components=1
-          echo "=== Qt 目录结构 ==="
-          ls -la $QT_DIR/
-          echo "=== Qt lib 目录 ==="
-          ls $QT_DIR/lib/ | head -20
-          echo "=== Qt include 目录 ==="
-          ls $QT_DIR/include/ | head -20
+      - name: Clone GCC toolchain
+        run: git clone --depth 1 https://github.com/Lyrecoul/aarch64-dictpen-linux-gnu-gcc-toolchain.git
 
-      - name: Build fake qmake
+      - name: Clone dictpen-libs
+        run: git clone --depth 1 https://github.com/Lyrecoul/dictpen-libs.git
+
+      - name: Set up environment
         run: |
-          # 创建 qmake.cpp
-          cat > /tmp/qmake.cpp << 'EOF'
-          #include <cstdio>
-          #include <cstdlib>
-          #include <cstring>
-          
-          #ifndef PREFIX
-          #define PREFIX "/tmp/qt-5.15.2-aarch64"
-          #endif
-          
-          int main(int argc, char *argv[]) {
-              if (argc > 1 && strcmp(argv[1], "-v") == 0) {
-                  printf("QMake version 3.1\n");
-                  printf("Using Qt version 5.15.2 in %s/lib\n", PREFIX);
-                  return 0;
-              }
-              if (argc > 1 && strcmp(argv[1], "-query") == 0) {
-                  printf("QT_VERSION:5.15.2\n");
-                  printf("QT_INSTALL_BINS:%s/bin\n", PREFIX);
-                  printf("QT_INSTALL_LIBS:%s/lib\n", PREFIX);
-                  printf("QT_INSTALL_HEADERS:%s/include\n", PREFIX);
-                  printf("QT_INSTALL_QML:%s/lib/qt/qml\n", PREFIX);
-                  printf("QT_INSTALL_PREFIX:%s\n", PREFIX);
-                  printf("QT_INSTALL_ARCHDATA:%s/lib/qt\n", PREFIX);
-                  printf("QT_INSTALL_DATA:%s/share/qt5\n", PREFIX);
-                  printf("QT_INSTALL_DOCS:%s/share/doc/qt5\n", PREFIX);
-                  printf("QT_INSTALL_TRANSLATIONS:%s/share/qt5/translations\n", PREFIX);
-                  printf("QT_INSTALL_CONFIGURATION:/etc/xdg\n");
-                  printf("QT_INSTALL_EXAMPLES:%s/lib/qt/examples\n", PREFIX);
-                  printf("QT_INSTALL_TESTS:%s/lib/qt/tests\n", PREFIX);
-                  printf("QT_INSTALL_PLUGINS:%s/lib/qt/plugins\n", PREFIX);
-                  printf("QT_INSTALL_IMPORTS:%s/lib/qt/imports\n", PREFIX);
-                  printf("QT_HOST_PREFIX:%s\n", PREFIX);
-                  printf("QT_HOST_BINS:%s/bin\n", PREFIX);
-                  printf("QT_HOST_LIBS:%s/lib\n", PREFIX);
-                  printf("QT_HOST_DATA:%s/lib/qt\n", PREFIX);
-                  printf("QT_SYSROOT:\n");
-                  printf("QT_INSTALL_PREFIX/dev:%s\n", PREFIX);
-                  printf("QT_INSTALL_PREFIX/src:%s\n", PREFIX);
-                  return 0;
-              }
-              // 默认输出 -query
-              printf("QT_VERSION:5.15.2\n");
-              printf("QT_INSTALL_BINS:%s/bin\n", PREFIX);
-              printf("QT_INSTALL_LIBS:%s/lib\n", PREFIX);
-              printf("QT_INSTALL_HEADERS:%s/include\n", PREFIX);
-              printf("QT_INSTALL_QML:%s/lib/qt/qml\n", PREFIX);
-              printf("QT_INSTALL_PREFIX:%s\n", PREFIX);
-              return 0;
-          }
-          EOF
-          
-          # 确保 bin 目录存在
-          mkdir -p $QT_DIR/bin
-          
-          # 编译 fake qmake
-          g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
-          
-          # 如果上面编译失败，重新编译
-          if [ ! -f $QT_DIR/bin/qmake ]; then
-              g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
+          echo "$PWD/qt-5.15.2-for-aarch64-dictpen-linux/bin" >> $GITHUB_PATH
+          echo "$PWD/aarch64-dictpen-linux-gnu-gcc-toolchain/bin" >> $GITHUB_PATH
+
+      - name: Verify environment
+        run: |
+          echo "=== qmake version ==="
+          ./qt-5.15.2-for-aarch64-dictpen-linux/bin/qmake --version
+          echo "=== gcc version ==="
+          aarch64-dictpen-linux-gnu-g++ --version | head -1
+          echo "=== Qt include modules ==="
+          ls qt-5.15.2-for-aarch64-dictpen-linux/include/ | head -40
+          echo "=== QtQml exists? ==="
+          ls -d qt-5.15.2-for-aarch64-dictpen-linux/include/QtQml 2>/dev/null || echo "QtQml NOT FOUND"
+          echo "=== QtQuick exists? ==="
+          ls -d qt-5.15.2-for-aarch64-dictpen-linux/include/QtQuick 2>/dev/null || echo "QtQuick NOT FOUND"
+          echo "=== dictpen mkspec ==="
+          ls qt-5.15.2-for-aarch64-dictpen-linux/mkspecs/dictpen/ 2>/dev/null || echo "dictpen mkspec NOT FOUND"
+
+      - name: Build with qmake
+        run: |
+          cd src
+          echo "=== Running qmake ==="
+          ../qt-5.15.2-for-aarch64-dictpen-linux/bin/qmake WeiboPocket.pro 2>&1 | tee qmake.log
+          QMAKE_EXIT=${PIPESTATUS[0]}
+          echo "=== qmake exit code: $QMAKE_EXIT ==="
+          if [ $QMAKE_EXIT -ne 0 ]; then
+            echo "=== qmake failed, full log ==="
+            cat qmake.log
+            exit 1
           fi
-          
-          # 测试 fake qmake
-          echo "=== fake qmake 测试 ==="
-          $QT_DIR/bin/qmake -query
-          
-          # 链接系统 moc/rcc/uic 到 Qt bin 目录（xmake 会在 Qt bin 目录找这些工具）
-          echo "=== 链接 Qt 工具 ==="
-          for tool in moc rcc uic qmlcachegen; do
-              if command -v $tool &> /dev/null; then
-                  ln -sf $(which $tool) $QT_DIR/bin/$tool
-                  echo "linked $tool -> $(which $tool)"
-              fi
-          done
-          # 也检查 /usr/lib/qt5/bin/
-          for tool in /usr/lib/qt5/bin/*; do
-              if [ -f "$tool" ]; then
-                  ln -sf $tool $QT_DIR/bin/$(basename $tool)
-                  echo "linked $(basename $tool) -> $tool"
-              fi
-          done
-          echo "=== Qt bin 目录内容 ==="
-          ls -la $QT_DIR/bin/
-          
-          # 加入 PATH
-          echo "$QT_DIR/bin" >> $GITHUB_PATH
-          export PATH="$QT_DIR/bin:$PATH"
-          which qmake
-          qmake -v
-          which moc
-          moc --version || true
-
-      - name: Configure xmake
-        run: |
-          source ~/.xmake/profile
-          export PATH="$QT_DIR/bin:/opt/zig:$PATH"
-          
-          echo "=== qmake 版本 ==="
-          qmake -v
-          
-          echo "=== 配置 xmake ==="
-          xmake f -c \
-            --qt="$QT_DIR" \
-            --arch=arm64-v8a \
-            --toolchain=zigcc \
-            --cross=aarch64-linux-gnu.2.27 \
-            -m release -vD
-
-      - name: Build plugin
-        run: |
-          source ~/.xmake/profile
-          export PATH="$QT_DIR/bin:/opt/zig:$PATH"
-          xmake -v
+          echo "=== qmake done, running make ==="
+          make -j$(nproc) 2>&1 | tee make.log
+          MAKE_EXIT=${PIPESTATUS[0]}
+          echo "=== make exit code: $MAKE_EXIT ==="
+          if [ $MAKE_EXIT -ne 0 ]; then
+            echo "=== make failed, last 100 lines ==="
+            tail -100 make.log
+            exit 1
+          fi
+          echo "=== make done ==="
+          ls -lh ../build/
 
       - name: Strip debug symbols
         run: |
-          if [ -f build/linux/arm64-v8a/release/libweibo_plugin.so ]; then
-            /opt/zig/zig strip build/linux/arm64-v8a/release/libweibo_plugin.so || true
-            ls -lh build/linux/arm64-v8a/release/libweibo_plugin.so
-          else
-            echo "ERROR: libweibo_plugin.so not found!"
-            find build -name "*.so" 2>/dev/null || true
-            exit 1
-          fi
+          aarch64-dictpen-linux-gnu-strip build/libweibo_plugin.so
+          ls -lh build/libweibo_plugin.so
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: libweibo_plugin
-          path: build/linux/arm64-v8a/release/libweibo_plugin.so
+          path: build/libweibo_plugin.so
           retention-days: 30
