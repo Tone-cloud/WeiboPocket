@@ -93,10 +93,6 @@ func (c *WeiboClient) GetStatusShow(ctx context.Context, id string) (*StatusInfo
 		return nil, fmt.Errorf("获取微博详情失败: %w", err)
 	}
 
-	var resp struct {
-		OK   int         `json:"ok"`
-		Data interface{} `json:"data"`
-	}
 	// 直接解析为 StatusInfo
 	var status StatusInfo
 	if err := json.Unmarshal(result, &status); err != nil {
@@ -122,11 +118,6 @@ func (c *WeiboClient) GetStatusShow(ctx context.Context, id string) (*StatusInfo
 func (c *WeiboClient) ToggleStatusLike(ctx context.Context, id string, like bool) (bool, error) {
 	if !c.isLoggedIn() {
 		return false, fmt.Errorf("需要登录才能点赞")
-	}
-
-	action := "like"
-	if !like {
-		action = "unlike"
 	}
 
 	params := map[string]string{
