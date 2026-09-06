@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git wget unzip zip python3 g++
+          sudo apt-get install -y build-essential git wget unzip zip python3 g++ qtbase5-dev-tools
 
       - name: Install xmake
         run: |
@@ -123,11 +123,31 @@ jobs:
           echo "=== fake qmake 测试 ==="
           $QT_DIR/bin/qmake -query
           
+          # 链接系统 moc/rcc/uic 到 Qt bin 目录（xmake 会在 Qt bin 目录找这些工具）
+          echo "=== 链接 Qt 工具 ==="
+          for tool in moc rcc uic qmlcachegen; do
+              if command -v $tool &> /dev/null; then
+                  ln -sf $(which $tool) $QT_DIR/bin/$tool
+                  echo "linked $tool -> $(which $tool)"
+              fi
+          done
+          # 也检查 /usr/lib/qt5/bin/
+          for tool in /usr/lib/qt5/bin/*; do
+              if [ -f "$tool" ]; then
+                  ln -sf $tool $QT_DIR/bin/$(basename $tool)
+                  echo "linked $(basename $tool) -> $tool"
+              fi
+          done
+          echo "=== Qt bin 目录内容 ==="
+          ls -la $QT_DIR/bin/
+          
           # 加入 PATH
           echo "$QT_DIR/bin" >> $GITHUB_PATH
           export PATH="$QT_DIR/bin:$PATH"
           which qmake
           qmake -v
+          which moc
+          moc --version || true
 
       - name: Configure xmake
         run: |
