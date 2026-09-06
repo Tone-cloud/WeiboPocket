@@ -1,0 +1,10 @@
+{
+    "id": "com.weibopocket.client",
+    "name": "微博口袋",
+    "version": "1.0.0",
+    "author": "WeiboPocket",
+    "description": "为 320x170 触摸屏设计的微博客户端",
+    "icon": "file://userdisk/PenMods/plugins/weibo_plugin/icon.png",
+    "main_qml": "qml/main.qml",
+    "main_so": "libweibo_plugin.so"
+}

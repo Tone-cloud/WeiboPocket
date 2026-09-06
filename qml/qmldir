@@ -1,0 +1,29 @@
+module WeiboPlugin
+
+# Singleton
+singleton Theme 1.0 Theme.qml
+
+# Components
+TitleBar 1.0 components/TitleBar.qml
+LoadingIndicator 1.0 components/LoadingIndicator.qml
+Toast 1.0 components/Toast.qml
+IconButton 1.0 components/IconButton.qml
+StatusCard 1.0 components/StatusCard.qml
+CommentCard 1.0 components/CommentCard.qml
+HotSearchItem 1.0 components/HotSearchItem.qml
+SuperTopicCard 1.0 components/SuperTopicCard.qml
+ErrorOverlay 1.0 components/ErrorOverlay.qml
+LoadMoreListView 1.0 components/LoadMoreListView.qml
+PopupStack 1.0 components/PopupStack.qml
+VirtualKeyboardInput 1.0 components/VirtualKeyboardInput.qml
+
+# Pages
+HomePage 1.0 pages/HomePage.qml
+SuperTopicPage 1.0 pages/SuperTopicPage.qml
+StatusDetailPage 1.0 pages/StatusDetailPage.qml
+CommentsPage 1.0 pages/CommentsPage.qml
+VideoPlayerPage 1.0 pages/VideoPlayerPage.qml
+SearchPage 1.0 pages/SearchPage.qml
+UserPage 1.0 pages/UserPage.qml
+ProfilePage 1.0 pages/ProfilePage.qml
+SettingsPage 1.0 pages/SettingsPage.qml

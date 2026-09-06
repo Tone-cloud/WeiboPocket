@@ -1,0 +1,19 @@
+﻿# Build artifacts
+build/
+go_server/server
+*.so
+*.zip
+weibo_plugin/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Go
+go_server/main/vendor/
