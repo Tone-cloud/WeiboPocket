@@ -12,7 +12,7 @@ on:
 env:
   QT_VERSION: "5.15.2"
   TARGET_ARCH: "arm64-v8a"
-  CROSS_PREFIX: "aarch64-linux-gnu"
+  QT_DIR: "/tmp/qt-5.15.2-aarch64"
 
 jobs:
   build:
@@ -25,7 +25,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git wget unzip zip python3
+          sudo apt-get install -y build-essential git wget unzip zip python3 g++
 
       - name: Install xmake
         run: |
@@ -42,37 +42,103 @@ jobs:
           echo "/opt/zig" >> $GITHUB_PATH
           zig version
 
-      - name: Clone Qt 5.15.2 for aarch64
+      - name: Download and extract Qt 5.15.2 for aarch64
         run: |
-          git clone --depth 1 https://github.com/Redbeanw44602/aarch64-linux-qt-5.15.2.git /tmp/qt-aarch64
+          wget -q https://github.com/Redbeanw44602/aarch64-linux-qt-5.15.2/releases/download/5.15.2/aarch64-linux-qt-5.15.2.tar.gz
+          mkdir -p $QT_DIR
+          tar -xzf aarch64-linux-qt-5.15.2.tar.gz -C $QT_DIR --strip-components=1
           echo "=== Qt 目录结构 ==="
-          ls -la /tmp/qt-aarch64/
-          echo "=== 查找 qmake ==="
-          find /tmp/qt-aarch64 -name "qmake*" -type f 2>/dev/null | head -10
-          echo "=== bin 目录 ==="
-          ls -la /tmp/qt-aarch64/bin/ 2>/dev/null || echo "无 bin 目录"
+          ls -la $QT_DIR/
+          echo "=== Qt lib 目录 ==="
+          ls $QT_DIR/lib/ | head -20
+          echo "=== Qt include 目录 ==="
+          ls $QT_DIR/include/ | head -20
+
+      - name: Build fake qmake
+        run: |
+          # 创建 qmake.cpp
+          cat > /tmp/qmake.cpp << 'EOF'
+          #include <cstdio>
+          #include <cstdlib>
+          #include <cstring>
+          
+          #ifndef PREFIX
+          #define PREFIX "/tmp/qt-5.15.2-aarch64"
+          #endif
+          
+          int main(int argc, char *argv[]) {
+              if (argc > 1 && strcmp(argv[1], "-v") == 0) {
+                  printf("QMake version 3.1\n");
+                  printf("Using Qt version 5.15.2 in %s/lib\n", PREFIX);
+                  return 0;
+              }
+              if (argc > 1 && strcmp(argv[1], "-query") == 0) {
+                  printf("QT_VERSION:5.15.2\n");
+                  printf("QT_INSTALL_BINS:%s/bin\n", PREFIX);
+                  printf("QT_INSTALL_LIBS:%s/lib\n", PREFIX);
+                  printf("QT_INSTALL_HEADERS:%s/include\n", PREFIX);
+                  printf("QT_INSTALL_QML:%s/lib/qt/qml\n", PREFIX);
+                  printf("QT_INSTALL_PREFIX:%s\n", PREFIX);
+                  printf("QT_INSTALL_ARCHDATA:%s/lib/qt\n", PREFIX);
+                  printf("QT_INSTALL_DATA:%s/share/qt5\n", PREFIX);
+                  printf("QT_INSTALL_DOCS:%s/share/doc/qt5\n", PREFIX);
+                  printf("QT_INSTALL_TRANSLATIONS:%s/share/qt5/translations\n", PREFIX);
+                  printf("QT_INSTALL_CONFIGURATION:/etc/xdg\n");
+                  printf("QT_INSTALL_EXAMPLES:%s/lib/qt/examples\n", PREFIX);
+                  printf("QT_INSTALL_TESTS:%s/lib/qt/tests\n", PREFIX);
+                  printf("QT_INSTALL_PLUGINS:%s/lib/qt/plugins\n", PREFIX);
+                  printf("QT_INSTALL_IMPORTS:%s/lib/qt/imports\n", PREFIX);
+                  printf("QT_HOST_PREFIX:%s\n", PREFIX);
+                  printf("QT_HOST_BINS:%s/bin\n", PREFIX);
+                  printf("QT_HOST_LIBS:%s/lib\n", PREFIX);
+                  printf("QT_HOST_DATA:%s/lib/qt\n", PREFIX);
+                  printf("QT_SYSROOT:\n");
+                  printf("QT_INSTALL_PREFIX/dev:%s\n", PREFIX);
+                  printf("QT_INSTALL_PREFIX/src:%s\n", PREFIX);
+                  return 0;
+              }
+              // 默认输出 -query
+              printf("QT_VERSION:5.15.2\n");
+              printf("QT_INSTALL_BINS:%s/bin\n", PREFIX);
+              printf("QT_INSTALL_LIBS:%s/lib\n", PREFIX);
+              printf("QT_INSTALL_HEADERS:%s/include\n", PREFIX);
+              printf("QT_INSTALL_QML:%s/lib/qt/qml\n", PREFIX);
+              printf("QT_INSTALL_PREFIX:%s\n", PREFIX);
+              return 0;
+          }
+          EOF
+          
+          # 编译 fake qmake
+          g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
+          
+          # 确保 bin 目录存在
+          mkdir -p $QT_DIR/bin
+          # 如果上面编译失败，重新编译
+          if [ ! -f $QT_DIR/bin/qmake ]; then
+              g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
+          fi
+          
+          # 测试 fake qmake
+          echo "=== fake qmake 测试 ==="
+          $QT_DIR/bin/qmake -query
+          
+          # 加入 PATH
+          echo "$QT_DIR/bin" >> $GITHUB_PATH
+          export PATH="$QT_DIR/bin:$PATH"
+          which qmake
+          qmake -v
 
       - name: Configure xmake
         run: |
           source ~/.xmake/profile
-          # 找到 qmake 所在目录并加入 PATH
-          QMAKE_PATH=$(find /tmp/qt-aarch64 -name "qmake" -type f 2>/dev/null | head -1)
-          if [ -n "$QMAKE_PATH" ]; then
-            QT_BIN_DIR=$(dirname "$QMAKE_PATH")
-            QT_ROOT_DIR=$(dirname "$QT_BIN_DIR")
-            echo "qmake found: $QMAKE_PATH"
-            echo "Qt bin dir: $QT_BIN_DIR"
-            echo "Qt root dir: $QT_ROOT_DIR"
-            export PATH="$QT_BIN_DIR:$PATH"
-          else
-            echo "WARNING: qmake not found, trying /tmp/qt-aarch64 directly"
-            QT_ROOT_DIR="/tmp/qt-aarch64"
-          fi
+          export PATH="$QT_DIR/bin:/opt/zig:$PATH"
           
-          qmake --version 2>&1 || echo "qmake not in PATH"
+          echo "=== qmake 版本 ==="
+          qmake -v
           
+          echo "=== 配置 xmake ==="
           xmake f -c \
-            --qt="$QT_ROOT_DIR" \
+            --qt="$QT_DIR" \
             --arch=arm64-v8a \
             --toolchain=zigcc \
             --cross=aarch64-linux-gnu.2.27 \
@@ -81,6 +147,7 @@ jobs:
       - name: Build plugin
         run: |
           source ~/.xmake/profile
+          export PATH="$QT_DIR/bin:/opt/zig:$PATH"
           xmake -v
 
       - name: Strip debug symbols
