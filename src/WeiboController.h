@@ -27,6 +27,9 @@ public:
 class WeiboController : public QObject {
   Q_OBJECT
 
+  friend class WeiboPlaybackModule;
+  friend class WeiboViewerModule;
+
   // 模块属性
   Q_PROPERTY(QObject *hot READ hot CONSTANT)
   Q_PROPERTY(QObject *status READ status CONSTANT)

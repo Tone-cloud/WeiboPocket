@@ -164,7 +164,7 @@ QVariant StatusListModel::data(const QModelIndex &index, int role) const {
     case IsLikedRole: return item->isLiked;
     case PicsRole: {
       QStringList urls;
-      for (const StatusPic &p : item->pics) urls << p.largeUrl.isEmpty() ? p.url : p.largeUrl;
+      for (const StatusPic &p : item->pics) urls << (p.largeUrl.isEmpty() ? p.url : p.largeUrl);
       return urls;
     }
     case PicCountRole: return item->pics.size();
