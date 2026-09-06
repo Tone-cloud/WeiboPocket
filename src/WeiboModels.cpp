@@ -182,7 +182,7 @@ QVariant StatusListModel::data(const QModelIndex &index, int role) const {
     case RetweetedPicsRole: {
       if (!item->retweeted) return QStringList();
       QStringList urls;
-      for (const StatusPic &p : item->retweeted->pics) urls << p.largeUrl.isEmpty() ? p.url : p.largeUrl;
+      for (const StatusPic &p : item->retweeted->pics) urls << (p.largeUrl.isEmpty() ? p.url : p.largeUrl);
       return urls;
     }
     case HasVideoRole: return item->hasVideo;
