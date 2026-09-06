@@ -108,11 +108,12 @@ jobs:
           }
           EOF
           
+          # 确保 bin 目录存在
+          mkdir -p $QT_DIR/bin
+          
           # 编译 fake qmake
           g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
           
-          # 确保 bin 目录存在
-          mkdir -p $QT_DIR/bin
           # 如果上面编译失败，重新编译
           if [ ! -f $QT_DIR/bin/qmake ]; then
               g++ -fmax-errors=1 -o $QT_DIR/bin/qmake -D"PREFIX=\"$QT_DIR\"" /tmp/qmake.cpp
