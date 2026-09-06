@@ -45,13 +45,34 @@ jobs:
       - name: Clone Qt 5.15.2 for aarch64
         run: |
           git clone --depth 1 https://github.com/Redbeanw44602/aarch64-linux-qt-5.15.2.git /tmp/qt-aarch64
+          echo "=== Qt 目录结构 ==="
           ls -la /tmp/qt-aarch64/
+          echo "=== 查找 qmake ==="
+          find /tmp/qt-aarch64 -name "qmake*" -type f 2>/dev/null | head -10
+          echo "=== bin 目录 ==="
+          ls -la /tmp/qt-aarch64/bin/ 2>/dev/null || echo "无 bin 目录"
 
       - name: Configure xmake
         run: |
           source ~/.xmake/profile
+          # 找到 qmake 所在目录并加入 PATH
+          QMAKE_PATH=$(find /tmp/qt-aarch64 -name "qmake" -type f 2>/dev/null | head -1)
+          if [ -n "$QMAKE_PATH" ]; then
+            QT_BIN_DIR=$(dirname "$QMAKE_PATH")
+            QT_ROOT_DIR=$(dirname "$QT_BIN_DIR")
+            echo "qmake found: $QMAKE_PATH"
+            echo "Qt bin dir: $QT_BIN_DIR"
+            echo "Qt root dir: $QT_ROOT_DIR"
+            export PATH="$QT_BIN_DIR:$PATH"
+          else
+            echo "WARNING: qmake not found, trying /tmp/qt-aarch64 directly"
+            QT_ROOT_DIR="/tmp/qt-aarch64"
+          fi
+          
+          qmake --version 2>&1 || echo "qmake not in PATH"
+          
           xmake f -c \
-            --qt="/tmp/qt-aarch64" \
+            --qt="$QT_ROOT_DIR" \
             --arch=arm64-v8a \
             --toolchain=zigcc \
             --cross=aarch64-linux-gnu.2.27 \
