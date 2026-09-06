@@ -42,8 +42,19 @@ INCLUDEPATH += $$PWD/../qt-5.15.2-for-aarch64-dictpen-linux/include/QtMultimedia
 INCLUDEPATH += $$PWD/../qt-5.15.2-for-aarch64-dictpen-linux/include/QtGui
 INCLUDEPATH += $$PWD/../qt-5.15.2-for-aarch64-dictpen-linux/include/QtGui/5.15.2
 
+# Qt 库路径
+LIBS += -L$$PWD/../qt-5.15.2-for-aarch64-dictpen-linux/lib
+
+# dictpen 系统库路径
+exists($$PWD/../dictpen-libs) {
+    LIBS += -L$$PWD/../dictpen-libs
+}
+
 # 链接 Qt 库
 LIBS += -lQt5Qml -lQt5Quick -lQt5Network -lQt5Multimedia -lQt5Gui -lQt5Core
+
+# 链接系统库
+LIBS += -lGLESv2 -lEGL -lmali
 
 # 编译选项
 QMAKE_CXXFLAGS += -Wno-deprecated-declarations -Wno-unused-parameter -Wno-unused-variable
