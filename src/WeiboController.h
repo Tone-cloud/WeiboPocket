@@ -105,14 +105,14 @@ public:
   bool isLoading() const { return m_isLoading; }
 
   // 模型访问
-  HotSearchModel *hotSearchModel() const { return m_hotSearchModel; }
-  StatusListModel *statusListModel() const { return m_statusListModel; }
-  StatusListModel *searchStatusModel() const { return m_searchStatusModel; }
-  StatusListModel *userStatusModel() const { return m_userStatusModel; }
-  CommentListModel *commentListModel() const { return m_commentModel; }
-  CommentListModel *commentReplyModel() const { return m_commentReplyModel; }
-  SuperTopicModel *superTopicModel() const { return m_superTopicModel; }
-  SearchUserModel *searchUserModel() const { return m_searchUserModel; }
+  Q_INVOKABLE HotSearchModel *hotSearchModel() const { return m_hotSearchModel; }
+  Q_INVOKABLE StatusListModel *statusListModel() const { return m_statusListModel; }
+  Q_INVOKABLE StatusListModel *searchStatusModel() const { return m_searchStatusModel; }
+  Q_INVOKABLE StatusListModel *userStatusModel() const { return m_userStatusModel; }
+  Q_INVOKABLE CommentListModel *commentListModel() const { return m_commentModel; }
+  Q_INVOKABLE CommentListModel *commentReplyModel() const { return m_commentReplyModel; }
+  Q_INVOKABLE SuperTopicModel *superTopicModel() const { return m_superTopicModel; }
+  Q_INVOKABLE SearchUserModel *searchUserModel() const { return m_searchUserModel; }
 
   WeiboNetwork *network() const { return m_network; }
 
