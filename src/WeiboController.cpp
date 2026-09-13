@@ -48,15 +48,15 @@ WeiboController::WeiboController(QObject *parent)
   m_userObj = new WeiboModule(this);
   m_authObj = new WeiboModule(this);
 
-  // 启动服务器
-  startServer();
+  // 注意：Go server 由 init_plugin() 同步启动，这里不再启动
+  // 启动服务器会导致端口冲突和重复进程
 
   // 检查登录状态
   QTimer::singleShot(1000, this, &WeiboController::checkLogin);
 }
 
 WeiboController::~WeiboController() {
-  stopServer();
+  // 注意：Go server 由 destroy_plugin() 停止，这里不再停止
 }
 
 // ==================== API 辅助 ====================
